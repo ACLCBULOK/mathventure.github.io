@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Registration</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="form-container" id="roleSelection">
+            <h2>Select Your Role</h2>
+            <button onclick="showRegisterForm('teacher')" class="role-btn">Teacher</button>
+            <button onclick="showRegisterForm('student')" class="role-btn">Student</button>
+        </div>
+
+        <div class="form-container hidden" id="teacherRegisterForm">
+            <h2>Teacher Registration</h2>
+            <form id="teacherRegistration" onsubmit="return handleRegister(event, 'teacher')">
+                <div class="form-group">
+                    <label for="teacherUsername">Full Name</label>
+                    <input type="text" id="teacherUsername" required minlength="3">
+                </div>
+                <div class="form-group">
+                    <label for="teacherEmail">Email</label>
+                    <input type="email" id="teacherEmail" required>
+                </div>
+                <div class="form-group">
+                    <label for="teacherPassword">Password</label>
+                    <input type="password" id="teacherPassword" required minlength="6">
+                </div>
+                <div class="form-group">
+                    <label for="teacherConfirmPassword">Confirm Password</label>
+                    <input type="password" id="teacherConfirmPassword" required>
+                </div>
+                <button type="submit">Register as Teacher</button>
+            </form>
+            <p>Already have an account? <a href="#" onclick="toggleForms('login')">Login here</a></p>
+            <p><a href="#" onclick="toggleForms('role')">Back to Role Selection</a></p>
+        </div>
+
+        <div class="form-container hidden" id="studentRegisterForm">
+            <h2>Student Registration</h2>
+            <form id="studentRegistration" onsubmit="return handleRegister(event, 'student')">
+                <div class="form-group">
+                    <label for="studentUsername">Full Name</label>
+                    <input type="text" id="studentUsername" required minlength="3">
+                </div>
+                <div class="form-group">
+                    <label for="studentEmail">Email</label>
+                    <input type="email" id="studentEmail" required>
+                </div>
+                <div class="form-group">
+                    <label for="studentPassword">Password</label>
+                    <input type="password" id="studentPassword" required minlength="6">
+                </div>
+                <div class="form-group">
+                    <label for="studentConfirmPassword">Confirm Password</label>
+                    <input type="password" id="studentConfirmPassword" required>
+                </div>
+                <button type="submit">Register as Student</button>
+            </form>
+            <p>Already have an account? <a href="#" onclick="toggleForms('login')">Login here</a></p>
+            <p><a href="#" onclick="toggleForms('role')">Back to Role Selection</a></p>
+        </div>
+
+        <div class="form-container hidden" id="loginForm">
+            <h2>Login</h2>
+            <form id="login" onsubmit="return handleLogin(event)">
+                <div class="form-group">
+                    <label for="loginEmail">Email</label>
+                    <input type="email" id="loginEmail" required>
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Password</label>
+                    <input type="password" id="loginPassword" required>
+                </div>
+                <button type="submit">Login</button>
+            </form>
+            <p>Don't have an account? <a href="#" onclick="toggleForms('role')">Register here</a></p>
+        </div>
+
+        <div class="form-container hidden" id="welcomeMessage">
+            <h2>Welcome!</h2>
+            <p>You have successfully logged in.</p>
+            <button onclick="handleLogout()">Logout</button>
+        </div>
+    </div>
+
+    <script>
+        // Store users in localStorage
+        let users = JSON.parse(localStorage.getItem('users')) || {
+            teachers: [],
+            students: []
+        };
+
+        function showRegisterForm(role) {
+            document.getElementById('roleSelection').classList.add('hidden');
+            document.getElementById(role + 'RegisterForm').classList.remove('hidden');
+        }
+
+        function toggleForms(type) {
+            // Hide all forms first
+            document.getElementById('roleSelection').classList.add('hidden');
+            document.getElementById('teacherRegisterForm').classList.add('hidden');
+            document.getElementById('studentRegisterForm').classList.add('hidden');
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('welcomeMessage').classList.add('hidden');
+
+            // Show the requested form
+            if (type === 'role') {
+                document.getElementById('roleSelection').classList.remove('hidden');
+            } else if (type === 'login') {
+                document.getElementById('loginForm').classList.remove('hidden');
+            }
+        }
+
+        function handleRegister(event, role) {
+            event.preventDefault();
+            
+            const username = document.getElementById(role + 'Username').value;
+            const email = document.getElementById(role + 'Email').value;
+            const password = document.getElementById(role + 'Password').value;
+            const confirmPassword = document.getElementById(role + 'ConfirmPassword').value;
+
+            // Clear previous error messages
+            clearErrors();
+
+            // Validate passwords match
+            if (password !== confirmPassword) {
+                showError(role + 'ConfirmPassword', 'Passwords do not match');
+                return false;
+            }
+
+            // Check if email already exists
+            if (users.teachers.some(user => user.email === email) || 
+                users.students.some(user => user.email === email)) {
+                showError(role + 'Email', 'Email already registered');
+                return false;
+            }
+
+            // Save user
+            users[role + 's'].push({
+                username,
+                email,
+                password
+            });
+            localStorage.setItem('users', JSON.stringify(users));
+
+            // Clear form
+            document.getElementById(role + 'Registration').reset();
+
+            // Show success message
+            alert('Registration successful! Please login.');
+            toggleForms('login');
+            return false;
+        }
+
+        function handleLogin(event) {
+            event.preventDefault();
+            
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            // Clear previous error messages
+            clearErrors();
+
+            // Check credentials
+            const user = users.teachers.find(u => u.email === email && u.password === password) || 
+                         users.students.find(u => u.email === email && u.password === password);
+
+            if (!user) {
+                showError('loginEmail', 'Invalid email or password');
+                return false;
+            }
+
+            // Store logged in user
+            localStorage.setItem('currentUser', JSON.stringify(user));
+
+            // Show welcome message
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('welcomeMessage').classList.remove('hidden');
+            return false;
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('currentUser');
+            document.getElementById('welcomeMessage').classList.add('hidden');
+            document.getElementById('loginForm').classList.remove('hidden');
+            document.getElementById('login').reset();
+        }
+
+        function showError(inputId, message) {
+            const input = document.getElementById(inputId);
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error';
+            errorDiv.textContent = message;
+            input.parentNode.appendChild(errorDiv);
+        }
+
+        function clearErrors() {
+            const errors = document.querySelectorAll('.error');
+            errors.forEach(error => error.remove());
+        }
+
+        // Check if user is already logged in
+        window.onload = function() {
+            const currentUser = localStorage.getItem('currentUser');
+            if (currentUser) {
+                document.getElementById('roleSelection').classList.add('hidden');
+                document.getElementById('welcomeMessage').classList.remove('hidden');
+            }
+        };
+    </script>
+</body>
+</html>
